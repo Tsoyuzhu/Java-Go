@@ -28,4 +28,15 @@ public class GameMove {
     public void setPosition(Position position) {
         this.position = position;
     }
+
+    public EnumPositionState getPieceType() {
+        switch(player) {
+            case BLACK:
+                return EnumPositionState.BLACK;
+            case WHITE:
+                return EnumPositionState.WHITE;
+            default:
+                return null;
+        }
+    }
 }

@@ -36,20 +36,30 @@ public class GameLogicTestUtils {
             switch (ch) {
                 case BLACK_PIECE:
                     state = EnumPositionState.BLACK;
+                    break;
                 case WHITE_PIECE:
                     state = EnumPositionState.WHITE;
+                    break;
                 case UNOCCUPIED:
                     state = EnumPositionState.UNOCCUPIED;
+                    break;
                 case NEWLINE:
                     continue;
                 default:
                     LOG.info("Read unknown character \"{}\". Cannot convert to boardstate", ch);
             }
-//            if (state != null) {
-////                boardState.
-////            }
-
+            if (state != null) {
+                positionStates.add(state);
+            }
         }
+        boardState.setPositionStates(positionStates);
         return boardState;
+    }
+
+    public static GameMove getMove(EnumPlayer player) {
+        GameMove move = new GameMove();
+        move.setPlayer(player);
+        move.setMoveType(EnumMoveType.PLACE);
+        return move;
     }
 }

@@ -21,18 +21,31 @@ public class BoardState {
         }
     }
 
-    public boolean isMoveLegal(BoardState boardState, GameMove gameMove) {
+    public boolean isMoveLegal(GameMove gameMove) {
         return isValidPosition(gameMove.getPosition()) && moveNotSelfCaptureOrKO(gameMove);
     }
 
-    private void advanceState() {
+    private void advanceState(GameMove gameMove) {
         // Remove all captured groups by setting the position in each captured group to UNOCCUPIED
-        List<Group> groups = getGroups();
+        List<Group> groups = getGroups(gameMove);
+
+        // However, the group which contains the most recent move is immune to capture if the move resulted in a capture
+        // We can determine this by checking if any of the target capture groups have 0 liberties
+        boolean latestMoveGroupImmune = groups.stream().anyMatch(g -> g.isLibertyOccupiedByLatestGameMove() && !g.isGroupOfLatestMove() && g.getLibertiesList().size() == 0);
         groups.stream()
-                .filter(Group::isCaptured)
+                .filter(g -> g.isCaptured() && !g.isGroupOfLatestMove())
                 .forEach(g -> {
                     g.getPositionList().forEach(p -> setPositionState(p, EnumPositionState.UNOCCUPIED));
                 });
+
+        // If the group is not immune and has no liberties then we need to set it's positions to captured
+        if (!latestMoveGroupImmune) {
+            Optional<Group> latestMoveGroup = groups.stream()
+                    .filter(g -> g.isGroupOfLatestMove() && g.getLibertiesList().size() == 0)
+                    .findFirst();
+
+            latestMoveGroup.ifPresent(g -> g.getPositionList().forEach(p -> setPositionState(p, EnumPositionState.UNOCCUPIED)));
+        }
     }
 
     public void setPositionStates(List<EnumPositionState> positionStates) {
@@ -55,9 +68,15 @@ public class BoardState {
 
     private boolean isValidPosition(Position position) {
         // Position not occupied and exists on board
-        return position.getX() < SIZE
-                && position.getY() < SIZE
-                && getPositionState(position).isUnoccupied();
+        return positionInbounds(position) && positionIsUnoccupied(position);
+    }
+
+    private boolean positionIsUnoccupied(Position position) {
+        return getPositionState(position).isUnoccupied();
+    }
+
+    private boolean positionInbounds(Position position) {
+        return position.getX() < SIZE && position.getY() < SIZE;
     }
 
     // This check requires an expensive copy operation of board state. Check self capture and KO at the same time to improve performance.
@@ -66,8 +85,10 @@ public class BoardState {
         boolean returnValue = false;
         // This copy operation is expensive. Needs improvement.
         List<EnumPositionState> positionStatesCopy = new ArrayList<>(positionStates);
-        advanceState();
-        if (getPositionState(gameMove.getPosition()).isUnoccupied() && !positionStates.equals(previousState)) {
+        setPositionState(gameMove.getPosition(),gameMove.getPieceType());
+        advanceState(gameMove);
+
+        if (!getPositionState(gameMove.getPosition()).isUnoccupied() && !positionStates.equals(previousState)) {
             returnValue = true;
         }
         // Preserve the board state
@@ -75,7 +96,7 @@ public class BoardState {
         return returnValue;
     }
 
-    private List<Group> getGroups() {
+    private List<Group> getGroups(GameMove latestMove) {
         // Track indices visited
         List<Position> visited = new ArrayList<>();
 
@@ -89,35 +110,72 @@ public class BoardState {
                 // Current piece
                 EnumPositionState type = getPositionState(position);
                 if (!type.isUnoccupied() && !visited.contains(position) ) {
-                    // We have a new group! Begin searching for other group members via BFS
+                    // We have a new group! Begin searching for other group members via DFS
                     Group group = new Group(type);
-
-                    // Track the neighbouring positions we need to visit in the BFS and initialise the queue
-                    Queue<Position> toVisit = new LinkedList<>(Collections.singletonList(position));
-
-                    while (!toVisit.isEmpty()) {
-                        Position navigator = toVisit.remove();
-                        // If we have already visited this element skip it
-                        if (visited.contains(navigator)) {
-                            continue;
-                        }
-                        if ( getPositionState(navigator).isUnoccupied() ) {
-                            // If it is empty, then it must be a liberty of this group! Add it to the liberty set
-                            group.getLibertiesList().add(navigator);
-                            // Do not mark the element as visited because liberties can be shared between groups
-                        } else if (getPositionState(navigator).equals(type)) {
-                            // If the piece is the same type then it must belong to the group
-                            group.getPositionList().add(navigator);
-                            // Add it's neighbours to the toVisit queue if they haven't already been visited
-                            List<Position> neighbours = navigator.getSurroundPositions().stream().filter(p -> !visited.contains(p)).collect(Collectors.toList());
-                            toVisit.addAll(neighbours);
-                            visited.add(navigator);
-                        }
-                    }
+                    dfs(position,visited,group,latestMove);
                     groups.add(group);
                 }
             }
         }
         return groups;
     }
+
+    private void dfs(Position position, List<Position> visited, Group group, GameMove latestMove) {
+        // This dfs has three goals:
+        // The first is to identify potential group members.
+        // The second is to identify if the latest game move has resulted in a capture.
+        // The third is to identify the group which contains the latest game move.
+        if (!visited.contains(position)) {
+            if (getPositionState(position).isUnoccupied()) {
+                // Found liberty
+                group.getLibertiesList().add(position);
+            } else if (getPositionState(position).equals(group.getType())) {
+                // Found group member
+                group.getPositionList().add(position);
+                // Found group of the latest Move
+                if (getPositionState(position).equals(latestMove.getPieceType()) && position.equals(latestMove.getPosition())) {
+                    group.setGroupOfLatestMove(true);
+                }
+                visited.add(position);
+                // Call dfs on neighbours to find more
+                List<Position> neighbours = position.getSurroundPositions().stream()
+                        .filter(this::positionInbounds)
+                        .collect(Collectors.toList());
+                neighbours.forEach(n -> dfs(n,visited,group,latestMove));
+            }
+        }
+        // Otherwise, check for a liberty which is occupied by the latest game move
+        if (position.equals(latestMove.getPosition()) && group.getType() != latestMove.getPieceType()) {
+            // Found group which has one of it's liberties occupied by latest gameMove
+            group.setLibertyOccupiedByLatestGameMove(true);
+        }
+    }
+
+    public String boardAsString() {
+        // Return board state as a string for debugging purposes
+        StringBuilder builder = new StringBuilder();
+        int i = 0;
+        for(EnumPositionState state: positionStates) {
+            switch(state) {
+                case UNOCCUPIED:
+                    builder.append(".");
+                    break;
+                case BLACK:
+                    builder.append("X");
+                    break;
+                case WHITE:
+                    builder.append("O");
+                    break;
+                default:
+                    builder.append("?");
+            }
+            i++;
+            if (i % SIZE == 0) {
+                builder.append("\n");
+            }
+        }
+        return builder.toString();
+    }
+
+
 }
