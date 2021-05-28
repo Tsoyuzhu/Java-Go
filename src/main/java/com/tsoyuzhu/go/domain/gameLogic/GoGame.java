@@ -1,13 +1,15 @@
 package com.tsoyuzhu.go.domain.gameLogic;
 
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
+
 import java.util.ArrayList;
 import java.util.List;
 
-public class GameState {
-    private String gameId;
-
-    // Player who is making a move this turn
-    private EnumPlayer playerToMove;
+@Document
+public class GoGame {
+    @Id
+    private String id;
 
     // List of past moves in the current game
     private List<GameMove> history;
@@ -18,26 +20,20 @@ public class GameState {
     // Current position of all pieces on the game board
     private BoardState boardState;
 
-    public String getGameId() {
-        return gameId;
+    public GoGame() {
+        legalMoves = new ArrayList<>();
+        history = new ArrayList<>();
     }
 
-    public void setGameId(String gameId) {
-        this.gameId = gameId;
+    public String getId() {
+        return id;
     }
 
-    public EnumPlayer getPlayerToMove() {
-        return playerToMove;
-    }
-
-    public void setPlayerToMove(EnumPlayer playerToMove) {
-        this.playerToMove = playerToMove;
+    public void setId(String id) {
+        this.id = id;
     }
 
     public List<GameMove> getHistory() {
-        if (history == null) {
-            return new ArrayList<GameMove>();
-        }
         return history;
     }
 
@@ -46,9 +42,6 @@ public class GameState {
     }
 
     public List<GameMove> getLegalMoves() {
-        if (legalMoves == null) {
-            return new ArrayList<GameMove>();
-        }
         return legalMoves;
     }
 

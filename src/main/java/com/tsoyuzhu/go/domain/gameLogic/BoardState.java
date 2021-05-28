@@ -7,6 +7,11 @@ public class BoardState {
 
     private static final int SIZE = 19;
 
+    private static final EnumPlayer GO_STARTING_PLAYER = EnumPlayer.BLACK;
+
+    // Player who is making a move this turn
+    private EnumPlayer playerToMove;
+
     // If we never exceed initial capacity then performance does not suffer from using an arrayList
     private List<EnumPositionState> positionStates = new ArrayList<EnumPositionState>(SIZE*SIZE);
 
@@ -19,6 +24,19 @@ public class BoardState {
             positionStates.add(EnumPositionState.UNOCCUPIED);
             previousState.add(EnumPositionState.UNOCCUPIED);
         }
+        playerToMove = GO_STARTING_PLAYER;
+    }
+
+    public void handleMoveRequest(GameMove gameMove) throws Exception {
+        if (!gameMove.getPlayer().equals(playerToMove)) {
+            throw new Exception("Invalid move - Player out of order");
+        }
+        if (!isMoveLegal(gameMove)) {
+            throw new Exception("Invalid move - Illegal");
+        }
+        // Move is legal so we can safely advance the state
+        advanceState(gameMove);
+        playerToMove = (playerToMove == EnumPlayer.BLACK) ? EnumPlayer.WHITE : EnumPlayer.BLACK;
     }
 
     public boolean isMoveLegal(GameMove gameMove) {
@@ -54,6 +72,14 @@ public class BoardState {
 
     public void setPreviousState(List<EnumPositionState> previousState) {
         this.previousState = previousState;
+    }
+
+    public EnumPlayer getPlayerToMove() {
+        return playerToMove;
+    }
+
+    public void setPlayerToMove(EnumPlayer playerToMove) {
+        this.playerToMove = playerToMove;
     }
 
     // HELPERS
