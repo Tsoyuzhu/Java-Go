@@ -42,6 +42,7 @@ public class GoGameServiceTest {
         ArgumentCaptor<GoGame> goGameArgumentCaptor = ArgumentCaptor.forClass(GoGame.class);
         when(goGameRepository.findGoGameById(any())).thenReturn(Optional.of(new GoGame()));
         GameMoveRequest request = getTestGameMoveRequest(EnumPlayer.BLACK);
+        request.setGameId("someGameId");
         GameMoveResponse response = goGameService.updateGame(request);
         verify(goGameRepository).updateGoGame(goGameArgumentCaptor.capture());
         GoGame goGame = goGameArgumentCaptor.getValue();
@@ -59,9 +60,15 @@ public class GoGameServiceTest {
     public void updateGameFailsWhenGameDoesntExist() throws Exception {
         when(goGameRepository.findGoGameById(any())).thenReturn(Optional.empty());
         GameMoveRequest request = getTestGameMoveRequest(EnumPlayer.BLACK);
+        request.setGameId("someNonExistentGameId");
         GameMoveResponse response = goGameService.updateGame(request);
         assertEquals(EnumGameMoveResponseType.FAILED, response.getGameMoveResponseType());
-        assertEquals("Move request is invalid - Game does not exist with requested gameId", response.getDetails());
+        assertEquals("GameMove invalid - Game does not exist with requested gameId", response.getDetails());
+    }
+
+    @Test
+    public void updateGameWithDoublePassEndsGame() {
+
     }
 
     private GameMoveRequest getTestGameMoveRequest(EnumPlayer player) {

@@ -91,4 +91,38 @@ public class BoardStateTest {
                 .isExactlyInstanceOf(Exception.class)
                 .hasMessage("Invalid move - Illegal");
     }
+
+    @Test
+    public void doublePassEndsGame() throws Exception {
+        BoardState boardState = new BoardState();
+        GameMove passMove = new GameMove();
+        passMove.setMoveType(EnumMoveType.PASS);
+        passMove.setPlayer(EnumPlayer.BLACK);
+        // First move request to pass
+        boardState.handleMoveRequest(passMove);
+        // Second move request to pass
+        passMove.setPlayer(EnumPlayer.WHITE);
+        boardState.handleMoveRequest(passMove);
+        assertTrue(boardState.isGameComplete());
+    }
+
+    @Test
+    public void passInBetweenDoesNotEndGame() throws Exception {
+        BoardState boardState = new BoardState();
+        GameMove passMove = new GameMove();
+        passMove.setMoveType(EnumMoveType.PASS);
+        passMove.setPlayer(EnumPlayer.BLACK);
+
+        GameMove placeMove = new GameMove();
+        placeMove.setMoveType(EnumMoveType.PLACE);
+        placeMove.setPlayer(EnumPlayer.WHITE);
+        placeMove.setPosition(new Position(18,18));
+
+        // First move request to pass
+        boardState.handleMoveRequest(passMove);
+
+        // Second move request NOT pass
+        boardState.handleMoveRequest(placeMove);
+        assertFalse(boardState.isGameComplete());
+    }
 }

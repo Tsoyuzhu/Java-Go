@@ -3,6 +3,8 @@ package com.tsoyuzhu.go.service;
 import com.tsoyuzhu.go.domain.api.EnumGameMoveResponseType;
 import com.tsoyuzhu.go.domain.api.GameMoveRequest;
 import com.tsoyuzhu.go.domain.api.GameMoveResponse;
+import com.tsoyuzhu.go.domain.gameLogic.EnumGameStatus;
+import com.tsoyuzhu.go.domain.gameLogic.EnumMoveType;
 import com.tsoyuzhu.go.domain.gameLogic.GoGame;
 import com.tsoyuzhu.go.repository.GoGameRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,14 +32,22 @@ public class GoGameService {
         return goGameRepository.findAllGames();
     }
 
-    // Games can only be modified using GameMoveRequests
     public GameMoveResponse updateGame(GameMoveRequest request) {
+        // Games can only be modified using GameMoveRequests
         GameMoveResponse gameMoveResponse = new GameMoveResponse(request.getGameId());
         try {
             GoGame goGame = verifyGameMoveRequest(request);
+            goGame.getHistory().add(request.getGameMove());
+            // If first move, update status
+            if (goGame.getHistory().isEmpty()) {
+                goGame.setGameStatus(EnumGameStatus.ONGOING);
+            }
             // Update board state
             goGame.getBoardState().handleMoveRequest(request.getGameMove());
-            goGame.getHistory().add(request.getGameMove());
+            // Check if game ended
+            if (goGame.getBoardState().isGameComplete()) {
+                goGame.setGameStatus(EnumGameStatus.COMPLETED);
+            }
             goGameRepository.updateGoGame(goGame);
             gameMoveResponse.setGameMoveResponseType(EnumGameMoveResponseType.SUCCESSFUL);
         } catch (Exception e) {
@@ -57,15 +67,20 @@ public class GoGameService {
     }
 
     private GoGame verifyGameMoveRequest(GameMoveRequest gameMoveRequest) throws Exception {
-        checkNotNull(gameMoveRequest.getGameMove(), "gameMove");
-        checkNotNull(gameMoveRequest.getGameMove().getPosition(), "position");
-        checkNotNull(gameMoveRequest.getGameMove().getMoveType(), "moveType");
-        checkNotNull(gameMoveRequest.getGameMove().getPieceType(), "pieceType");
-        checkNotNull(gameMoveRequest.getGameMove().getPlayer(), "gameMove");
+        // First check if game exists
         checkNotNull(gameMoveRequest.getGameId(), "gameId");
         Optional<GoGame> gameStateExists = goGameRepository.findGoGameById(gameMoveRequest.getGameId());
         if (!gameStateExists.isPresent()) {
             throw new Exception("GameMove invalid - Game does not exist with requested gameId");
+        }
+        // Now check if gameMove was provided
+        checkNotNull(gameMoveRequest.getGameMove(), "gameMove");
+        checkNotNull(gameMoveRequest.getGameMove().getPlayer(), "player");
+        checkNotNull(gameMoveRequest.getGameMove().getMoveType(), "moveType");
+        // If a PLACE move was provided, check that the relevant fields exist
+        if (gameMoveRequest.getGameMove().getMoveType().equals(EnumMoveType.PLACE)) {
+            checkNotNull(gameMoveRequest.getGameMove().getPosition(), "position");
+            checkNotNull(gameMoveRequest.getGameMove().getPieceType(), "pieceType");
         }
         return gameStateExists.get();
     }

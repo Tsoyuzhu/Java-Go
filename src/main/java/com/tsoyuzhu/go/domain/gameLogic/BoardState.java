@@ -18,6 +18,12 @@ public class BoardState {
     // Keep a copy of the last state to check whether the KO rule has been broken
     private List<EnumPositionState> previousState = new ArrayList<>(SIZE*SIZE);
 
+    // Track if last player has passed
+    private boolean previousPlayerPassed;
+
+    // Detemrine if game as ended
+    private boolean gameComplete;
+
     public BoardState() {
         // Init board with empty states
         for (int i = 0; i < SIZE*SIZE; i++) {
@@ -25,25 +31,35 @@ public class BoardState {
             previousState.add(EnumPositionState.UNOCCUPIED);
         }
         playerToMove = GO_STARTING_PLAYER;
+        gameComplete = false;
+        previousPlayerPassed = false;
     }
 
     public void handleMoveRequest(GameMove gameMove) throws Exception {
-        if (!gameMove.getPlayer().equals(playerToMove)) {
-            throw new Exception("Invalid move - It is " + playerToMove.toString() + "'s turn to play");
+        verifyGameMove(gameMove);
+        if (gameMove.getMoveType().equals(EnumMoveType.PASS)) {
+            if (this.previousPlayerPassed) {
+                // Game ends if both players pass
+                this.gameComplete = true;
+            } else {
+                this.previousPlayerPassed = true;
+            }
+        } else {
+            // Set the new previous state as the current
+            previousState = new ArrayList<>(positionStates);
+            // Move is legal so we can make the move and advance the state
+            setPositionState(gameMove.getPosition(), gameMove.getPieceType());
+            advanceState(gameMove);
+            this.previousPlayerPassed = false;
         }
-        if (!isMoveLegal(gameMove)) {
-            throw new Exception("Invalid move - Illegal");
-        }
-        // Set the new previous state as the current
-        previousState = new ArrayList<>(positionStates);
-        // Move is legal so we can make the move and advance the state
-        setPositionState(gameMove.getPosition(), gameMove.getPieceType());
-        advanceState(gameMove);
         playerToMove = (playerToMove == EnumPlayer.BLACK) ? EnumPlayer.WHITE : EnumPlayer.BLACK;
     }
 
     private boolean isMoveLegal(GameMove gameMove) {
-        return isValidPosition(gameMove.getPosition()) && moveNotSelfCaptureOrKO(gameMove);
+        if (gameMove.getMoveType().equals(EnumMoveType.PLACE)) {
+            return isValidPosition(gameMove.getPosition()) && moveNotSelfCaptureOrKO(gameMove);
+        }
+        return true;
     }
 
     private void advanceState(GameMove gameMove) {
@@ -73,10 +89,6 @@ public class BoardState {
         this.positionStates = positionStates;
     }
 
-    public void setPreviousState(List<EnumPositionState> previousState) {
-        this.previousState = previousState;
-    }
-
     public EnumPlayer getPlayerToMove() {
         return playerToMove;
     }
@@ -85,7 +97,9 @@ public class BoardState {
         this.playerToMove = playerToMove;
     }
 
-
+    public boolean isGameComplete() {
+        return gameComplete;
+    }
 
     // HELPERS
     private EnumPositionState getPositionState(Position position) {
@@ -182,31 +196,13 @@ public class BoardState {
         }
     }
 
-    public String boardAsString() {
-        // Return board state as a string for debugging purposes
-        StringBuilder builder = new StringBuilder();
-        int i = 0;
-        for(EnumPositionState state: positionStates) {
-            switch(state) {
-                case UNOCCUPIED:
-                    builder.append(".");
-                    break;
-                case BLACK:
-                    builder.append("X");
-                    break;
-                case WHITE:
-                    builder.append("O");
-                    break;
-                default:
-                    builder.append("?");
-            }
-            i++;
-            if (i % SIZE == 0) {
-                builder.append("\n");
-            }
+    public void verifyGameMove(GameMove gameMove) throws Exception {
+        if (!gameMove.getPlayer().equals(playerToMove)) {
+            throw new Exception("Invalid move - It is " + playerToMove.toString() + "'s turn to play");
         }
-        return builder.toString();
+        if (!isMoveLegal(gameMove)) {
+            throw new Exception("Invalid move - Illegal");
+        }
     }
-
 
 }

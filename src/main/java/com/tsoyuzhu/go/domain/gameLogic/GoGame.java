@@ -20,10 +20,13 @@ public class GoGame {
     // Current position of all pieces on the game board
     private BoardState boardState;
 
+    private EnumGameStatus gameStatus;
+
     public GoGame() {
-        legalMoves = new ArrayList<>();
-        history = new ArrayList<>();
-        boardState = new BoardState();
+        this.legalMoves = new ArrayList<>();
+        this.history = new ArrayList<>();
+        this.boardState = new BoardState();
+        this.gameStatus = EnumGameStatus.CREATED;
     }
 
     public String getId() {
@@ -56,5 +59,13 @@ public class GoGame {
 
     public void setBoardState(BoardState boardState) {
         this.boardState = boardState;
+    }
+
+    public EnumGameStatus getGameStatus() {
+        return gameStatus;
+    }
+
+    public void setGameStatus(EnumGameStatus gameStatus) {
+        this.gameStatus = gameStatus;
     }
 }
