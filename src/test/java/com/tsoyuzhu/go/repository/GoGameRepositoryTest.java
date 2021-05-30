@@ -48,10 +48,8 @@ public class GoGameRepositoryTest {
     }
 
     private GoGame getTestGoGame() throws IOException {
-        GoGame goGame = new GoGame();
-        BoardState boardState = GameLogicTestUtils.readBoard("board_state_1.txt");
+        GoGame goGame = GameLogicTestUtils.readBoard("board_state_1.txt");
         goGame.setId("GoGame9090");
-        goGame.setBoardState(boardState);
         return goGame;
     }
 

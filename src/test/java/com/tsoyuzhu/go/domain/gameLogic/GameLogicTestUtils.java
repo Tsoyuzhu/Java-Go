@@ -17,13 +17,13 @@ public class GameLogicTestUtils {
 
     private static final Logger LOG = LoggerFactory.getLogger(GameLogicTestUtils.class);
 
-    public static BoardState readBoard(String filename) throws IOException {
+    public static GoGame readBoard(String filename) throws IOException {
         // Generate a boardState from a given text file to help generate test scenarios
         File file = new File(String.format("src/test/resources/gameScenarios/%s",filename));
         InputStream input = new FileInputStream(file);
         Reader reader = new InputStreamReader(input, Charset.defaultCharset());
         int r, index;
-        BoardState boardState = new BoardState();
+        GoGame goGame = new GoGame();
         List<EnumPositionState> positionStates = new ArrayList<>();
 
         while((r = reader.read()) != EOF ){
@@ -49,8 +49,8 @@ public class GameLogicTestUtils {
                 positionStates.add(state);
             }
         }
-        boardState.setPositionStates(positionStates);
-        return boardState;
+        goGame.setPositionStates(positionStates);
+        return goGame;
     }
 
     public static GameMove getMove(EnumPlayer player) {

@@ -34,7 +34,7 @@ public class GoGameServiceTest {
         goGameService.createGame();
         verify(goGameRepository).createGoGame(goGameArgumentCaptor.capture());
         GoGame goGame = goGameArgumentCaptor.getValue();
-        assertEquals(EnumPlayer.BLACK, goGame.getBoardState().getPlayerToMove());
+        assertEquals(EnumPlayer.BLACK, goGame.getPlayerToMove());
     }
 
     @Test
@@ -52,7 +52,7 @@ public class GoGameServiceTest {
         assertEquals(EnumGameMoveResponseType.SUCCESSFUL, response.getGameMoveResponseType());
 
         // Check gameState modified correctly by move request
-        assertEquals(EnumPositionState.BLACK, ReflectionTestUtils.invokeMethod(goGame.getBoardState(),"getPositionState", request.getGameMove().getPosition()));
+        assertEquals(EnumPositionState.BLACK, ReflectionTestUtils.invokeMethod(goGame,"getPositionState", request.getGameMove().getPosition()));
         assertEquals(1, goGame.getHistory().size());
     }
 
@@ -64,11 +64,6 @@ public class GoGameServiceTest {
         GameMoveResponse response = goGameService.updateGame(request);
         assertEquals(EnumGameMoveResponseType.FAILED, response.getGameMoveResponseType());
         assertEquals("GameMove invalid - Game does not exist with requested gameId", response.getDetails());
-    }
-
-    @Test
-    public void updateGameWithDoublePassEndsGame() {
-
     }
 
     private GameMoveRequest getTestGameMoveRequest(EnumPlayer player) {

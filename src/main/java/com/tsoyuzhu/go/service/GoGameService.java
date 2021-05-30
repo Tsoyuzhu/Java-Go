@@ -3,7 +3,6 @@ package com.tsoyuzhu.go.service;
 import com.tsoyuzhu.go.domain.api.EnumGameMoveResponseType;
 import com.tsoyuzhu.go.domain.api.GameMoveRequest;
 import com.tsoyuzhu.go.domain.api.GameMoveResponse;
-import com.tsoyuzhu.go.domain.gameLogic.EnumGameStatus;
 import com.tsoyuzhu.go.domain.gameLogic.EnumMoveType;
 import com.tsoyuzhu.go.domain.gameLogic.GoGame;
 import com.tsoyuzhu.go.repository.GoGameRepository;
@@ -37,10 +36,7 @@ public class GoGameService {
         GameMoveResponse gameMoveResponse = new GameMoveResponse(request.getGameId());
         try {
             GoGame goGame = verifyGameMoveRequest(request);
-            goGame.getBoardState().handleMoveRequest(request.getGameMove());
-            checkFirstMove(goGame);
-            checkGameOver(goGame);
-            goGame.getHistory().add(request.getGameMove());
+            goGame.handleMoveRequest(request.getGameMove());
             goGameRepository.updateGoGame(goGame);
             gameMoveResponse.setGameMoveResponseType(EnumGameMoveResponseType.SUCCESSFUL);
         } catch (Exception e) {
@@ -81,20 +77,6 @@ public class GoGameService {
     private void checkNotNull(Object o, String fieldName) throws Exception {
         if (o == null) {
             throw new Exception("GameMove Invalid - " + fieldName + " was not provided in request");
-        }
-    }
-
-    private void checkFirstMove(GoGame goGame) {
-        // If first move, update status to ONGOING
-        if (goGame.getHistory().isEmpty()) {
-            goGame.setGameStatus(EnumGameStatus.ONGOING);
-        }
-    }
-
-    private void checkGameOver(GoGame goGame) {
-        // Check if game ended
-        if (goGame.getBoardState().isGameComplete()) {
-            goGame.setGameStatus(EnumGameStatus.COMPLETED);
         }
     }
 }

@@ -11,104 +11,104 @@ import static org.junit.Assert.*;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @RunWith(MockitoJUnitRunner.class)
-public class BoardStateTest {
+public class GoGameTest {
 
     @Test
     public void outOfBoundsMoveIsIllegal() throws IOException {
-        BoardState boardState = GameLogicTestUtils.readBoard("board_state_1.txt");
+        GoGame goGame = GameLogicTestUtils.readBoard("board_state_1.txt");
         GameMove move = GameLogicTestUtils.getMove(EnumPlayer.BLACK);
         Position outOfBoundsPosition = new Position(19, 19);
         move.setPosition(outOfBoundsPosition);
-        assertFalse(ReflectionTestUtils.invokeMethod(boardState,"isMoveLegal",move));
+        assertFalse(ReflectionTestUtils.invokeMethod(goGame,"isMoveLegal",move));
     }
 
     @Test
     public void playOnExistingPieceIsIllegal() throws IOException {
-        BoardState boardState = GameLogicTestUtils.readBoard("board_state_1.txt");
+        GoGame goGame = GameLogicTestUtils.readBoard("board_state_1.txt");
         GameMove move = GameLogicTestUtils.getMove(EnumPlayer.BLACK);
         Position occupiedPosition = new Position(5, 3);
         move.setPosition(occupiedPosition);
-        assertFalse(ReflectionTestUtils.invokeMethod(boardState,"isMoveLegal",move));
+        assertFalse(ReflectionTestUtils.invokeMethod(goGame,"isMoveLegal",move));
     }
 
     @Test
     public void playSelfCaptureIsIllegal() throws IOException {
-        BoardState boardState = GameLogicTestUtils.readBoard("board_state_2.txt");
+        GoGame goGame = GameLogicTestUtils.readBoard("board_state_2.txt");
         GameMove move = GameLogicTestUtils.getMove(EnumPlayer.BLACK);
         Position selfCapturePosition = new Position(18, 18);
         move.setPosition(selfCapturePosition);
-        assertFalse(ReflectionTestUtils.invokeMethod(boardState,"isMoveLegal",move));
+        assertFalse(ReflectionTestUtils.invokeMethod(goGame,"isMoveLegal",move));
     }
 
     @Test
     public void playSelfCaptureAdjacentOwnPieceIsIllegal() throws IOException {
-        BoardState boardState = GameLogicTestUtils.readBoard("board_state_2.txt");
+        GoGame goGame = GameLogicTestUtils.readBoard("board_state_2.txt");
         GameMove move = GameLogicTestUtils.getMove(EnumPlayer.WHITE);
         Position selfCapturePosition = new Position(4, 13);
         move.setPosition(selfCapturePosition);
-        assertFalse(ReflectionTestUtils.invokeMethod(boardState,"isMoveLegal",move));
+        assertFalse(ReflectionTestUtils.invokeMethod(goGame,"isMoveLegal",move));
     }
 
     @Test
     public void playSurroundOwnPieceIsLegal() throws IOException {
-        BoardState boardState = GameLogicTestUtils.readBoard("board_state_2.txt");
+        GoGame goGame = GameLogicTestUtils.readBoard("board_state_2.txt");
         GameMove move = GameLogicTestUtils.getMove(EnumPlayer.WHITE);
         Position selfSurroundPosition = new Position(18, 18);
         move.setPosition(selfSurroundPosition);
-        assertTrue(ReflectionTestUtils.invokeMethod(boardState,"isMoveLegal",move));
+        assertTrue(ReflectionTestUtils.invokeMethod(goGame,"isMoveLegal",move));
     }
 
     @Test
     public void playSelfCaptureResultingInCaptureIsLegal() throws IOException {
-        BoardState boardState = GameLogicTestUtils.readBoard("board_state_3.txt");
+        GoGame goGame = GameLogicTestUtils.readBoard("board_state_3.txt");
         GameMove move = GameLogicTestUtils.getMove(EnumPlayer.BLACK);
         Position capturePosition = new Position(7,12);
         move.setPosition(capturePosition);
-        assertTrue(ReflectionTestUtils.invokeMethod(boardState,"isMoveLegal",move));
+        assertTrue(ReflectionTestUtils.invokeMethod(goGame,"isMoveLegal",move));
     }
 
     @Test
     public void playOutOfOrderThrowsException() throws Exception {
-        BoardState boardState = GameLogicTestUtils.readBoard("board_state_3.txt");
-        boardState.setPlayerToMove(EnumPlayer.BLACK);
+        GoGame goGame = GameLogicTestUtils.readBoard("board_state_3.txt");
+        goGame.setPlayerToMove(EnumPlayer.BLACK);
         // Try to play as WHITE
         GameMove move = GameLogicTestUtils.getMove(EnumPlayer.WHITE);
         Position dummyPosition = new Position(7,12);
         move.setPosition(dummyPosition);
-        assertThatThrownBy(() -> boardState.handleMoveRequest(move))
+        assertThatThrownBy(() -> goGame.handleMoveRequest(move))
                 .isExactlyInstanceOf(Exception.class)
                 .hasMessage("Invalid move - It is BLACK's turn to play");
     }
 
     @Test
     public void playIllegalMoveThrowsException() throws Exception {
-        BoardState boardState = GameLogicTestUtils.readBoard("board_state_2.txt");
-        boardState.setPlayerToMove(EnumPlayer.WHITE);
+        GoGame goGame = GameLogicTestUtils.readBoard("board_state_2.txt");
+        goGame.setPlayerToMove(EnumPlayer.WHITE);
         GameMove move = GameLogicTestUtils.getMove(EnumPlayer.WHITE);
         Position illegalMovePosition = new Position(4, 13);
         move.setPosition(illegalMovePosition);
-        assertThatThrownBy(() -> boardState.handleMoveRequest(move))
+        assertThatThrownBy(() -> goGame.handleMoveRequest(move))
                 .isExactlyInstanceOf(Exception.class)
                 .hasMessage("Invalid move - Illegal");
     }
 
     @Test
     public void doublePassEndsGame() throws Exception {
-        BoardState boardState = new BoardState();
+        GoGame goGame = new GoGame();
         GameMove passMove = new GameMove();
         passMove.setMoveType(EnumMoveType.PASS);
         passMove.setPlayer(EnumPlayer.BLACK);
         // First move request to pass
-        boardState.handleMoveRequest(passMove);
+        goGame.handleMoveRequest(passMove);
         // Second move request to pass
         passMove.setPlayer(EnumPlayer.WHITE);
-        boardState.handleMoveRequest(passMove);
-        assertTrue(boardState.isGameComplete());
+        goGame.handleMoveRequest(passMove);
+        assertEquals(EnumGameStatus.COMPLETED, goGame.getGameStatus());
     }
 
     @Test
     public void passInBetweenDoesNotEndGame() throws Exception {
-        BoardState boardState = new BoardState();
+        GoGame goGame = new GoGame();
         GameMove passMove = new GameMove();
         passMove.setMoveType(EnumMoveType.PASS);
         passMove.setPlayer(EnumPlayer.BLACK);
@@ -119,10 +119,10 @@ public class BoardStateTest {
         placeMove.setPosition(new Position(18,18));
 
         // First move request to pass
-        boardState.handleMoveRequest(passMove);
+        goGame.handleMoveRequest(passMove);
 
         // Second move request NOT pass
-        boardState.handleMoveRequest(placeMove);
-        assertFalse(boardState.isGameComplete());
+        goGame.handleMoveRequest(placeMove);
+        assertEquals(EnumGameStatus.ONGOING, goGame.getGameStatus());
     }
 }
