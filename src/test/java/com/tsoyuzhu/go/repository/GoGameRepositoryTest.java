@@ -22,14 +22,22 @@ public class GoGameRepositoryTest {
     private GoGameRepository goGameRepository;
 
     @Test
-    public void findGameStateById() throws IOException {
+    public void createGoGameProvidesId() throws IOException {
+        GoGame goGame = getTestGoGame();
+        goGame.setId(null);
+        goGame = goGameRepository.createGoGame(goGame);
+        assertNotNull(goGame.getId());
+    }
+
+    @Test
+    public void findGoGameById() throws IOException {
         goGameRepository.createGoGame(getTestGoGame());
         Optional<GoGame> goGameExists = goGameRepository.findGoGameById("GoGame9090");
         assertTrue(goGameExists.isPresent());
     }
 
     @Test
-    public void updateGameState() throws IOException {
+    public void updateGoGame() throws IOException {
         GoGame goGame = getTestGoGame();
         goGameRepository.createGoGame(goGame);
         goGame.getHistory().add(getTestGameMove(EnumPlayer.BLACK));

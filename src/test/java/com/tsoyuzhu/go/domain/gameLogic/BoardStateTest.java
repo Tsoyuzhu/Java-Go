@@ -2,13 +2,15 @@ package com.tsoyuzhu.go.domain.gameLogic;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.mockito.junit.MockitoJUnitRunner;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.io.IOException;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.Assert.*;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-@RunWith(SpringRunner.class)
+@RunWith(MockitoJUnitRunner.class)
 public class BoardStateTest {
 
     @Test
@@ -17,7 +19,7 @@ public class BoardStateTest {
         GameMove move = GameLogicTestUtils.getMove(EnumPlayer.BLACK);
         Position outOfBoundsPosition = new Position(19, 19);
         move.setPosition(outOfBoundsPosition);
-        assertFalse(boardState.isMoveLegal(move));
+        assertFalse(ReflectionTestUtils.invokeMethod(boardState,"isMoveLegal",move));
     }
 
     @Test
@@ -26,7 +28,7 @@ public class BoardStateTest {
         GameMove move = GameLogicTestUtils.getMove(EnumPlayer.BLACK);
         Position occupiedPosition = new Position(5, 3);
         move.setPosition(occupiedPosition);
-        assertFalse(boardState.isMoveLegal(move));
+        assertFalse(ReflectionTestUtils.invokeMethod(boardState,"isMoveLegal",move));
     }
 
     @Test
@@ -35,7 +37,7 @@ public class BoardStateTest {
         GameMove move = GameLogicTestUtils.getMove(EnumPlayer.BLACK);
         Position selfCapturePosition = new Position(18, 18);
         move.setPosition(selfCapturePosition);
-        assertFalse(boardState.isMoveLegal(move));
+        assertFalse(ReflectionTestUtils.invokeMethod(boardState,"isMoveLegal",move));
     }
 
     @Test
@@ -44,7 +46,7 @@ public class BoardStateTest {
         GameMove move = GameLogicTestUtils.getMove(EnumPlayer.WHITE);
         Position selfCapturePosition = new Position(4, 13);
         move.setPosition(selfCapturePosition);
-        assertFalse(boardState.isMoveLegal(move));
+        assertFalse(ReflectionTestUtils.invokeMethod(boardState,"isMoveLegal",move));
     }
 
     @Test
@@ -53,7 +55,7 @@ public class BoardStateTest {
         GameMove move = GameLogicTestUtils.getMove(EnumPlayer.WHITE);
         Position selfSurroundPosition = new Position(18, 18);
         move.setPosition(selfSurroundPosition);
-        assertTrue(boardState.isMoveLegal(move));
+        assertTrue(ReflectionTestUtils.invokeMethod(boardState,"isMoveLegal",move));
     }
 
     @Test
@@ -62,6 +64,31 @@ public class BoardStateTest {
         GameMove move = GameLogicTestUtils.getMove(EnumPlayer.BLACK);
         Position capturePosition = new Position(7,12);
         move.setPosition(capturePosition);
-        assertTrue(boardState.isMoveLegal(move));
+        assertTrue(ReflectionTestUtils.invokeMethod(boardState,"isMoveLegal",move));
+    }
+
+    @Test
+    public void playOutOfOrderThrowsException() throws Exception {
+        BoardState boardState = GameLogicTestUtils.readBoard("board_state_3.txt");
+        boardState.setPlayerToMove(EnumPlayer.BLACK);
+        // Try to play as WHITE
+        GameMove move = GameLogicTestUtils.getMove(EnumPlayer.WHITE);
+        Position dummyPosition = new Position(7,12);
+        move.setPosition(dummyPosition);
+        assertThatThrownBy(() -> boardState.handleMoveRequest(move))
+                .isExactlyInstanceOf(Exception.class)
+                .hasMessage("Invalid move - It is BLACK's turn to play");
+    }
+
+    @Test
+    public void playIllegalMoveThrowsException() throws Exception {
+        BoardState boardState = GameLogicTestUtils.readBoard("board_state_2.txt");
+        boardState.setPlayerToMove(EnumPlayer.WHITE);
+        GameMove move = GameLogicTestUtils.getMove(EnumPlayer.WHITE);
+        Position illegalMovePosition = new Position(4, 13);
+        move.setPosition(illegalMovePosition);
+        assertThatThrownBy(() -> boardState.handleMoveRequest(move))
+                .isExactlyInstanceOf(Exception.class)
+                .hasMessage("Invalid move - Illegal");
     }
 }

@@ -23,6 +23,7 @@ public class GoGame {
     public GoGame() {
         legalMoves = new ArrayList<>();
         history = new ArrayList<>();
+        boardState = new BoardState();
     }
 
     public String getId() {

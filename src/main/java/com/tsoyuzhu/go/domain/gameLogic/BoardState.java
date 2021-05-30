@@ -29,17 +29,20 @@ public class BoardState {
 
     public void handleMoveRequest(GameMove gameMove) throws Exception {
         if (!gameMove.getPlayer().equals(playerToMove)) {
-            throw new Exception("Invalid move - Player out of order");
+            throw new Exception("Invalid move - It is " + playerToMove.toString() + "'s turn to play");
         }
         if (!isMoveLegal(gameMove)) {
             throw new Exception("Invalid move - Illegal");
         }
-        // Move is legal so we can safely advance the state
+        // Set the new previous state as the current
+        previousState = new ArrayList<>(positionStates);
+        // Move is legal so we can make the move and advance the state
+        setPositionState(gameMove.getPosition(), gameMove.getPieceType());
         advanceState(gameMove);
         playerToMove = (playerToMove == EnumPlayer.BLACK) ? EnumPlayer.WHITE : EnumPlayer.BLACK;
     }
 
-    public boolean isMoveLegal(GameMove gameMove) {
+    private boolean isMoveLegal(GameMove gameMove) {
         return isValidPosition(gameMove.getPosition()) && moveNotSelfCaptureOrKO(gameMove);
     }
 
@@ -81,6 +84,8 @@ public class BoardState {
     public void setPlayerToMove(EnumPlayer playerToMove) {
         this.playerToMove = playerToMove;
     }
+
+
 
     // HELPERS
     private EnumPositionState getPositionState(Position position) {
