@@ -72,9 +72,8 @@ each HTTP request for a game state modification is provided a single response. T
 In order to improve this, the API layer would need to be replaced by a websocket layer which services incoming client connections and transmits 
 the progress of the game to both players at the same time. 
 
-In addition to implementing the websocket message mappings, we would also need to track the existing clients in a persistent storage layer and implement a match-making system.
-The persistent storage is required in order to make the application stateless, which in turn allows the application to scale horizontally by duplicating server instances and placing them behind a load balancer.
-In contrast, if client connections were stored in server memory, then clients would not be able to see other clients which were connected on different servers. 
+In addition to implementing the websocket message mappings, we would also need to an external subscription/publisher system and implement a match-making system.
+The subscription/publisher system required in order to keep the application stateless, which in turn allows the application to scale horizontally by duplicating server instances and placing them behind a load balancer. The subscriber/publisher system needs to be external from the server because a server can only talk to a client which is currently connected to it. In a horizontally scaled system, two clients playing the same game may be connected to different servers.  
 
 Finally, the scoring algorithm needs to be implemented. This is not a trivial task, as the Japanese scoring system has a non-trivial implementation for board states which are not in completed state (All territory has been fully encapsulated by one of the two players).
 Scoring is mandatory to determining the winner. If two players are competiting, it is a requirement for the application to produce a winner. Implementing this algorithm is a matter of research and testing.
